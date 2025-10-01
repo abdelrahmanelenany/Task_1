@@ -70,6 +70,22 @@ export async function createPerk(req, res, next) {
 // TODO
 // Update an existing perk by ID and validate only the fields that are being updated 
 export async function updatePerk(req, res, next) {
+  try {
+    // For PATCH, allow partial updates: all fields optional but validated
+    const patchSchema = Joi.object({
+      title: Joi.string().min(2),
+      description: Joi.string().allow(''),
+      category: Joi.string().valid('food','tech','travel','fitness','other'),
+      discountPercent: Joi.number().min(0).max(100),
+      merchant: Joi.string().allow('')
+    }).min(1);
+
+    const { value, error } = patchSchema.validate(req.body);
+    if (error) return res.status(400).json({ message: error.message });
+    const doc = await Perk.findByIdAndUpdate(req.params.id, { ...value }, { new: true });
+    if (!doc) return res.status(404).json({ message: 'Perk not found' });
+    res.json({ perk: doc });
+  } catch (err) { next(err); }
   
 }
 
